@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>篆书之美 · 百家姓三篆展示</title>
+    <!--
+      GitHub Pages SPA 路由回退页
+      访问 /Seal/xiaozhuan/zhao 等子路径时,GitHub Pages 返回 404.html
+      此处将原路径存入 sessionStorage,重定向到首页 /Seal/
+      再由 index.html 中的脚本恢复原路径,交由 React Router 接管路由
+    -->
+    <script>
+      (function () {
+        sessionStorage.setItem(
+          'gh-pages-redirect',
+          window.location.pathname + window.location.search + window.location.hash
+        );
+        window.location.replace('/Seal/');
+      })();
+    </script>
+  </head>
+  <body>
+    <p style="text-align: center; margin-top: 40px; font-family: serif">正在跳转…</p>
+  </body>
+</html>
