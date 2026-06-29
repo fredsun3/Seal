@@ -7,6 +7,7 @@ const navItems = [
   { path: "/xiaozhuan", label: "小篆", en: "Xiaozhuan" },
   { path: "/dazhuan", label: "大篆", en: "Dazhuan" },
   { path: "/niaochongzhuan", label: "鸟虫篆", en: "Niaochong" },
+  { path: "/qianziwen", label: "千字文", en: "Qianziwen" },
 ];
 
 export default function Navbar() {

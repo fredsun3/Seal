@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { ChevronDown, BookOpen, Sparkles, Scroll, Grid3x3 } from "lucide-react";
+import { ChevronDown, BookOpen, Sparkles, Scroll, Grid3x3, BookMarked, ArrowRight } from "lucide-react";
 import { scripts } from "@/data/scripts";
 import { surnames } from "@/data/surnames";
 import ScriptCard from "@/components/ScriptCard";
@@ -279,6 +279,104 @@ export default function Home() {
               <span className="opacity-30">|</span>
               <span>支持快捷键 <kbd className="px-1.5 py-0.5 bg-paper-dark/40 rounded border border-bronze/20">Ctrl+K</kbd> 搜索</span>
             </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* 千字文入口 */}
+      <section className="py-20 lg:py-28 relative overflow-hidden bg-ink">
+        <div className="absolute inset-0 bronze-surface opacity-80" />
+        <div className="container mx-auto px-4 relative z-10">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-12"
+          >
+            <div className="inline-flex items-center gap-2 px-4 py-1 mb-4 text-xs tracking-widest text-bronze-light border border-bronze/30 rounded-full">
+              <BookMarked size={12} />
+              蒙学经典 · THOUSAND CHARACTER CLASSIC
+            </div>
+            <h2 className="font-display text-4xl lg:text-5xl text-paper mb-3">
+              千字文 · 一千汉字之意
+            </h2>
+            <p className="text-bronze-light/70 text-sm max-w-2xl mx-auto">
+              南朝周兴嗣编次,一千字无一重复。
+              天文地理、修身治国,尽在其中,为蒙学之首。
+            </p>
+          </motion.div>
+
+          {/* 千字文入口卡片 */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="max-w-4xl mx-auto"
+          >
+            <Link
+              to="/qianziwen"
+              className="group block rounded-lg overflow-hidden transition-all duration-500 hover:-translate-y-1 hover:shadow-bronze"
+              style={{
+                background:
+                  "linear-gradient(135deg, #2a2018 0%, #1a1410 50%, #0d0a08 100%)",
+                border: "1px solid rgba(184, 137, 58, 0.3)",
+              }}
+            >
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-0 items-center">
+                {/* 左侧:篆体展示 */}
+                <div className="p-10 lg:p-14 flex flex-col items-center justify-center">
+                  <div
+                    className="flex flex-wrap items-center justify-center gap-2 mb-4"
+                    style={{ backgroundColor: "#c8392e", padding: "1.5rem", borderRadius: "8px" }}
+                  >
+                    {["天", "地", "玄", "黄"].map((ch, i) => (
+                      <SealCharacter
+                        key={`${ch}-${i}`}
+                        char={ch}
+                        script="xiaozhuan"
+                        size={56}
+                      />
+                    ))}
+                  </div>
+                  <div
+                    className="flex flex-wrap items-center justify-center gap-2"
+                    style={{ backgroundColor: "#c8392e", padding: "1.5rem", borderRadius: "8px" }}
+                  >
+                    {["宇", "宙", "洪", "荒"].map((ch, i) => (
+                      <SealCharacter
+                        key={`${ch}-${i}`}
+                        char={ch}
+                        script="xiaozhuan"
+                        size={56}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {/* 右侧:介绍与入口 */}
+                <div className="p-10 lg:p-12 text-center md:text-left">
+                  <h3 className="font-display text-3xl text-paper mb-4">
+                    天地玄黄 · 宇宙洪荒
+                  </h3>
+                  <p className="text-bronze-light/70 text-sm font-serif leading-relaxed mb-6">
+                    《千字文》由南朝梁周兴嗣一夜编成,从王羲之书法中拓取一千个不重复汉字,
+                    编为四言韵文。涵盖天文地理、历史人文、修身立德、田园归隐,
+                    逐联注释,明其典故,通其义理。
+                  </p>
+                  <div className="flex flex-col sm:flex-row items-center gap-3 md:justify-start justify-center">
+                    <span className="inline-flex items-center gap-2 px-6 py-2.5 bg-cinnabar text-paper rounded font-serif text-sm tracking-wider group-hover:bg-cinnabar-dark transition-all">
+                      阅览千字文
+                      <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                    </span>
+                    <span className="text-bronze-light/50 text-xs font-serif">
+                      1000 字 · 250 句 · 125 联
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </Link>
           </motion.div>
         </div>
       </section>

@@ -6,6 +6,7 @@ import Home from "@/pages/Home";
 import ScriptDetail from "@/pages/ScriptDetail";
 import SurnameDetail from "@/pages/SurnameDetail";
 import ScriptCharDetail from "@/pages/ScriptCharDetail";
+import QianziwenDetail from "@/pages/QianziwenDetail";
 
 export default function App() {
   // basename 适配 GitHub Pages 子路径 /Seal/
@@ -24,6 +25,8 @@ export default function App() {
             <Route path="/:scriptId/:charId" element={<ScriptCharDetail />} />
             {/* 姓氏三篆详情页:展示指定百家姓在三种篆体下的对比 */}
             <Route path="/surname/:surnameId" element={<SurnameDetail />} />
+            {/* 千字文详细介绍页:展示千字文原篇全文与逐联注释释义 */}
+            <Route path="/qianziwen" element={<QianziwenDetail />} />
           </Routes>
         </main>
         <Footer />
