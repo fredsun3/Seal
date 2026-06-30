@@ -9,6 +9,7 @@ import {
   Layers,
   Feather,
   Calendar,
+  X,
 } from "lucide-react";
 import {
   qianziwen,
@@ -17,6 +18,8 @@ import {
   QIANZIWEN_TOTAL_LINES,
   QIANZIWEN_TOTAL_COUPLETS,
 } from "@/data/qianziwen";
+import SealCharacter from "@/components/SealCharacter";
+import { scripts, type ScriptId } from "@/data/scripts";
 
 /**
  * 《千字文》详细介绍页
@@ -26,11 +29,41 @@ import {
 export default function QianziwenDetail() {
   const [activeChapter, setActiveChapter] = useState<string>("全部");
   const [searchTerm, setSearchTerm] = useState("");
+  // 全文篆体展示类型:原文 / 小篆 / 大篆 / 鸟虫篆
+  const [activeScript, setActiveScript] = useState<string>("original");
+  // 篆体模式下分批加载,避免一次请求过多图片
+  const [displayCount, setDisplayCount] = useState(25);
+  // 注释区篆体展示类型:原文 / 小篆 / 大篆 / 鸟虫篆
+  const [annotationScript, setAnnotationScript] = useState<string>("original");
+  // 注释区篆体模式分批加载
+  const [annotationDisplayCount, setAnnotationDisplayCount] = useState(20);
+  // 大图弹窗:选中的联索引(null=关闭)
+  const [selectedCoupletIndex, setSelectedCoupletIndex] = useState<number | null>(null);
 
   // 滚动到顶部
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
+
+  // ESC 键关闭大图弹窗
+  useEffect(() => {
+    if (selectedCoupletIndex === null) return;
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSelectedCoupletIndex(null);
+    };
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, [selectedCoupletIndex]);
+
+  // 切换篆体时重置分批加载数量
+  useEffect(() => {
+    setDisplayCount(25);
+  }, [activeScript]);
+
+  // 切换注释区篆体或筛选条件时重置分批加载
+  useEffect(() => {
+    setAnnotationDisplayCount(20);
+  }, [annotationScript, activeChapter, searchTerm]);
 
   // 按篇章与关键字筛选
   const filteredCouplets = useMemo(() => {
@@ -244,22 +277,104 @@ export default function QianziwenDetail() {
               </p>
             </div>
 
-            {/* 全文展示 - 传统竖排版式 */}
-            <div className="paper-card p-8 lg:p-12 rounded-lg">
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-4 gap-y-2">
-                {fullText.map((line, index) => (
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 0 }}
-                    whileInView={{ opacity: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.3, delay: Math.min(index * 0.005, 0.5) }}
-                    className="text-center font-serif text-sm text-ink/85 leading-loose tracking-wider"
-                  >
-                    {line}
-                  </motion.div>
-                ))}
-              </div>
+            {/* 篆体选择器 */}
+            <div className="flex flex-wrap items-center justify-center gap-2 mb-8">
+              <button
+                type="button"
+                onClick={() => setActiveScript("original")}
+                className={`px-4 py-1.5 rounded-full text-xs font-serif tracking-wider transition-all ${
+                  activeScript === "original"
+                    ? "bg-cinnabar text-paper shadow-seal"
+                    : "bg-paper-dark/30 text-rubbing border border-bronze/20 hover:border-bronze/40 hover:text-ink"
+                }`}
+              >
+                原文
+              </button>
+              {scripts.map((script) => (
+                <button
+                  key={script.id}
+                  type="button"
+                  onClick={() => setActiveScript(script.id)}
+                  className={`px-4 py-1.5 rounded-full text-xs font-serif tracking-wider transition-all ${
+                    activeScript === script.id
+                      ? "bg-cinnabar text-paper shadow-seal"
+                      : "bg-paper-dark/30 text-rubbing border border-bronze/20 hover:border-bronze/40 hover:text-ink"
+                  }`}
+                >
+                  {script.name}
+                </button>
+              ))}
+            </div>
+
+            {/* 全文展示 */}
+            <div className="paper-card p-6 lg:p-10 rounded-lg">
+              {activeScript === "original" ? (
+                /* 原文展示 - 传统横排版式 */
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-4 gap-y-2">
+                  {fullText.map((line, index) => (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0 }}
+                      whileInView={{ opacity: 1 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.3, delay: Math.min(index * 0.005, 0.5) }}
+                      className="text-center font-serif text-sm text-ink/85 leading-loose tracking-wider"
+                    >
+                      {line}
+                    </motion.div>
+                  ))}
+                </div>
+              ) : (
+                /* 篆体展示 - 红底金字,逐字渲染,分批加载 */
+                <>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                    {fullText.slice(0, displayCount).map((line, index) => {
+                      const chars = Array.from(line).filter((c) => c !== " ");
+                      return (
+                        <motion.div
+                          key={index}
+                          initial={{ opacity: 0 }}
+                          whileInView={{ opacity: 1 }}
+                          viewport={{ once: true }}
+                          transition={{ duration: 0.3, delay: Math.min(index * 0.005, 0.5) }}
+                          className="rounded-md p-2.5 cursor-pointer transition-transform hover:scale-105 hover:shadow-lg"
+                          style={{ backgroundColor: "#c8392e" }}
+                          onDoubleClick={() => setSelectedCoupletIndex(index)}
+                          title="双击查看大图"
+                        >
+                          <div
+                            className="text-[9px] font-serif tracking-widest mb-1 text-center"
+                            style={{ color: "rgba(240, 192, 64, 0.6)" }}
+                          >
+                            第{index + 1}联
+                          </div>
+                          <div className="grid grid-cols-4 gap-0.5">
+                            {chars.map((ch, i) => (
+                              <SealCharacter
+                                key={`${ch}-${i}`}
+                                char={ch}
+                                script={activeScript as ScriptId}
+                                size={32}
+                              />
+                            ))}
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                  {displayCount < fullText.length && (
+                    <div className="text-center mt-8">
+                      <button
+                        type="button"
+                        onClick={() => setDisplayCount((prev) => prev + 25)}
+                        className="px-6 py-2.5 rounded-full text-xs font-serif tracking-wider transition-all bg-cinnabar/10 text-cinnabar border border-cinnabar/30 hover:bg-cinnabar hover:text-paper"
+                      >
+                        加载更多(已显示 {displayCount} / {fullText.length} 联)
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </motion.div>
         </div>
@@ -322,6 +437,36 @@ export default function QianziwenDetail() {
               ))}
             </div>
 
+            {/* 篆体切换 */}
+            <div className="flex flex-wrap items-center justify-center gap-2 mb-12">
+              <span className="text-xs font-serif text-rubbing tracking-widest mr-2">篆体</span>
+              <button
+                type="button"
+                onClick={() => setAnnotationScript("original")}
+                className={`px-3 py-1 rounded-full text-xs font-serif tracking-wider transition-all ${
+                  annotationScript === "original"
+                    ? "bg-bronze text-paper"
+                    : "bg-paper-dark/30 text-rubbing border border-bronze/20 hover:border-bronze/40 hover:text-ink"
+                }`}
+              >
+                楷书
+              </button>
+              {scripts.map((script) => (
+                <button
+                  key={script.id}
+                  type="button"
+                  onClick={() => setAnnotationScript(script.id)}
+                  className={`px-3 py-1 rounded-full text-xs font-serif tracking-wider transition-all ${
+                    annotationScript === script.id
+                      ? "bg-bronze text-paper"
+                      : "bg-paper-dark/30 text-rubbing border border-bronze/20 hover:border-bronze/40 hover:text-ink"
+                  }`}
+                >
+                  {script.name}
+                </button>
+              ))}
+            </div>
+
             {/* 注释列表 */}
             <div className="space-y-4">
               {filteredCouplets.length === 0 ? (
@@ -329,7 +474,11 @@ export default function QianziwenDetail() {
                   未找到匹配的内容,请尝试其他关键词。
                 </div>
               ) : (
-                filteredCouplets.map((couplet, index) => (
+                <>
+                  {(annotationScript === "original"
+                    ? filteredCouplets
+                    : filteredCouplets.slice(0, annotationDisplayCount)
+                  ).map((couplet, index) => (
                   <motion.div
                     key={couplet.id}
                     initial={{ opacity: 0, y: 20 }}
@@ -366,12 +515,39 @@ export default function QianziwenDetail() {
                         </div>
 
                         {/* 原文 */}
-                        <div className="font-display text-2xl lg:text-3xl tracking-[0.15em] mb-2" style={{ color: "#f0c040" }}>
-                          {couplet.text.split(" ")[0]}
-                        </div>
-                        <div className="font-display text-2xl lg:text-3xl tracking-[0.15em] mb-4" style={{ color: "#f0c040" }}>
-                          {couplet.text.split(" ")[1] || ""}
-                        </div>
+                        {annotationScript === "original" ? (
+                          <>
+                            <div className="font-display text-2xl lg:text-3xl tracking-[0.15em] mb-2" style={{ color: "#f0c040" }}>
+                              {couplet.text.split(" ")[0]}
+                            </div>
+                            <div className="font-display text-2xl lg:text-3xl tracking-[0.15em] mb-4" style={{ color: "#f0c040" }}>
+                              {couplet.text.split(" ")[1] || ""}
+                            </div>
+                          </>
+                        ) : (
+                          <div className="mb-4">
+                            <div className="flex justify-center gap-1 mb-1.5">
+                              {Array.from(couplet.text.split(" ")[0]).map((ch, i) => (
+                                <SealCharacter
+                                  key={`u-${i}`}
+                                  char={ch}
+                                  script={annotationScript as ScriptId}
+                                  size={42}
+                                />
+                              ))}
+                            </div>
+                            <div className="flex justify-center gap-1">
+                              {Array.from(couplet.text.split(" ")[1] || "").map((ch, i) => (
+                                <SealCharacter
+                                  key={`l-${i}`}
+                                  char={ch}
+                                  script={annotationScript as ScriptId}
+                                  size={42}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        )}
 
                         {/* 拼音 */}
                         <div className="text-xs font-serif tracking-wider" style={{ color: "rgba(240, 192, 64, 0.65)" }}>
@@ -395,7 +571,22 @@ export default function QianziwenDetail() {
                       </div>
                     </div>
                   </motion.div>
-                ))
+                  ))}
+                  {annotationScript !== "original" &&
+                    annotationDisplayCount < filteredCouplets.length && (
+                      <div className="text-center pt-4">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setAnnotationDisplayCount((prev) => prev + 20)
+                          }
+                          className="px-6 py-2.5 rounded-full text-xs font-serif tracking-wider transition-all bg-cinnabar/10 text-cinnabar border border-cinnabar/30 hover:bg-cinnabar hover:text-paper"
+                        >
+                          加载更多(已显示 {annotationDisplayCount} / {filteredCouplets.length} 联)
+                        </button>
+                      </div>
+                    )}
+                </>
               )}
             </div>
           </motion.div>
@@ -436,6 +627,108 @@ export default function QianziwenDetail() {
           </motion.div>
         </div>
       </section>
+
+      {/* ===== 大图弹窗(双击联卡片触发) ===== */}
+      {selectedCoupletIndex !== null && activeScript !== "original" && (() => {
+        const couplet = qianziwen[selectedCoupletIndex];
+        if (!couplet) return null;
+        const upperChars = Array.from(couplet.text.split(" ")[0] || "");
+        const lowerChars = Array.from(couplet.text.split(" ")[1] || "");
+        return (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ backgroundColor: "rgba(0, 0, 0, 0.75)" }}
+            onClick={() => setSelectedCoupletIndex(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.85 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              className="relative max-w-2xl w-full rounded-xl overflow-hidden shadow-2xl"
+              style={{ backgroundColor: "#c8392e" }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* 关闭按钮 */}
+              <button
+                type="button"
+                onClick={() => setSelectedCoupletIndex(null)}
+                className="absolute top-3 right-3 z-10 w-9 h-9 rounded-full flex items-center justify-center transition-colors"
+                style={{ backgroundColor: "rgba(0, 0, 0, 0.3)", color: "#f0c040" }}
+                aria-label="关闭"
+              >
+                <X size={18} />
+              </button>
+
+              {/* 联序号 */}
+              <div className="text-center pt-6 pb-2">
+                <span
+                  className="inline-block px-4 py-1 rounded-full text-xs font-serif tracking-widest"
+                  style={{ backgroundColor: "rgba(0, 0, 0, 0.2)", color: "#f0c040" }}
+                >
+                  第 {selectedCoupletIndex + 1} 联 · {couplet.chapter}
+                </span>
+              </div>
+
+              {/* 篆体大字展示 */}
+              <div className="px-6 py-6">
+                {/* 上句 */}
+                <div className="flex justify-center gap-3 mb-4">
+                  {upperChars.map((ch, i) => (
+                    <SealCharacter
+                      key={`u-${ch}-${i}`}
+                      char={ch}
+                      script={activeScript as ScriptId}
+                      size={72}
+                    />
+                  ))}
+                </div>
+                {/* 下句 */}
+                <div className="flex justify-center gap-3 mb-4">
+                  {lowerChars.map((ch, i) => (
+                    <SealCharacter
+                      key={`l-${ch}-${i}`}
+                      char={ch}
+                      script={activeScript as ScriptId}
+                      size={72}
+                    />
+                  ))}
+                </div>
+                {/* 拼音 */}
+                <div
+                  className="text-center text-sm font-serif tracking-wider mb-4"
+                  style={{ color: "rgba(240, 192, 64, 0.7)" }}
+                >
+                  {couplet.pinyinUpper}　{couplet.pinyinLower}
+                </div>
+              </div>
+
+              {/* 注释释义 */}
+              <div className="px-6 pb-6">
+                <div
+                  className="rounded-lg p-4"
+                  style={{ backgroundColor: "rgba(0, 0, 0, 0.15)" }}
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <BookOpen size={12} style={{ color: "#f0c040" }} />
+                    <span
+                      className="text-xs tracking-widest font-serif"
+                      style={{ color: "#f0c040" }}
+                    >
+                      注释释义
+                    </span>
+                  </div>
+                  <p
+                    className="text-sm leading-relaxed font-serif"
+                    style={{ color: "rgba(255, 255, 255, 0.85)" }}
+                  >
+                    {couplet.meaning}
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
