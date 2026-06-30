@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
 import type { ScriptId } from "@/data/scripts";
 
@@ -11,20 +11,21 @@ interface SealCharacterProps {
 }
 
 /**
- * 三种篆体对应的字体 ID 列表(来自 yishuzi.org 篆体图片生成服务)
+ * 三种篆体对应的字体文件名列表(来自 yishuzi.cn 篆体图片生成服务)
  * 按优先级排列,前一个缺字时自动回退到下一个
- * - xiaozhuan: 周崇谦小篆(字库最全)→ 迷你篆书 → 说文小篆(字库不全,仅作兜底)
+ * - xiaozhuan: 方正小篆体(字库最全)→ 汉仪篆书繁 → 迷你繁篆书(字库不全,仅作兜底)
  * - dazhuan: 金文大篆体(字库较全)
  * - niaochongzhuan: 经典繁印篆 → 经典繁方篆(印篆风格装饰性篆体)
  */
 const FONT_MAP: Record<ScriptId, string[]> = {
-  xiaozhuan: ["10086", "10081", "10087"],
-  dazhuan: ["10078"],
-  niaochongzhuan: ["10080", "10079"],
+  xiaozhuan: ["fangzhengxiaozhuanti.ttf", "hanyizhuanshu.ttf", "minifanzhuanshu.ttf"],
+  dazhuan: ["jinwendazhuan.ttf"],
+  niaochongzhuan: ["jingdianfanyinzhuan.TTF", "jingdianfanfangzhuan.TTF"],
 };
 
-// 篆体图片 API 基址:开发环境走 vite 代理,生产环境直连 yishuzi.org(支持 HTTPS)
-const SEAL_API_BASE = import.meta.env.DEV ? "/seal-api/make/" : "https://www.yishuzi.org/make/";
+// 篆体图片 API 基址:开发环境走 vite 代理,生产环境直连 yishuzi.cn
+// yishuzi.org 服务器已宕机,切换到 yishuzi.cn(图片 API 路径为 /zhuanti/image.png)
+const SEAL_API_BASE = import.meta.env.DEV ? "/seal-api/zhuanti/image.png" : "https://www.yishuzi.cn/zhuanti/image.png";
 
 interface SingleCharProps {
   char: string;
@@ -34,42 +35,78 @@ interface SingleCharProps {
 
 /**
  * 单字篆体渲染
- * 通过 yishuzi.org 接口生成真正的篆体字形图片,红底金字
+ * 通过 yishuzi.cn 接口生成真正的篆体字形图片,红底金字
  * 支持字体回退:主字体缺字时自动尝试下一个字体
  * 所有字体都缺字时回退到楷书显示,保证内容可见
+ * 带加载超时机制:10 秒无响应自动回退,避免无限等待
  */
 function SingleSealChar({ char, script, size }: SingleCharProps) {
   const fontList = FONT_MAP[script];
   const [fontIndex, setFontIndex] = useState(0);
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // 清除超时定时器
+  const clearTimeout = useCallback(() => {
+    if (timeoutRef.current) {
+      globalThis.clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+  }, []);
 
   // 字符或篆体变化时重置状态
   useEffect(() => {
     setFontIndex(0);
     setLoaded(false);
     setFailed(false);
-  }, [char, script]);
+    return () => clearTimeout();
+  }, [char, script, clearTimeout]);
 
   const currentFont = fontList[Math.min(fontIndex, fontList.length - 1)];
 
   // 构造篆体图片 URL(经 vite 代理,避免跨域)
-  // 画布远大于字体,确保文字完整显示不被裁剪(鸟虫篆等字形较宽)
+  // yishuzi.cn API 参数:fsize=字号, font=字体文件名, text=文字, color=字色, bgcolor=背景色
   const imgSrc = useMemo(() => {
-    const imgSize = Math.round(size * 2.5);
     const fontSize = Math.round(size * 1.2);
     const params = new URLSearchParams({
+      fsize: String(fontSize),
+      font: currentFont,
       text: char,
-      font: `${currentFont}.ttf`,
-      size: String(fontSize),
-      jiaodu: "0",
-      bjys: "c8392e",
-      ztys: "d4a017",
-      width: String(imgSize),
-      height: String(imgSize),
+      mirror: "no",
+      color: "d4a017",
+      vcolor: "d4a017",
+      bgcolor: "c8392e",
+      alpha: "100",
+      output: "png",
+      spacing: "4",
+      shadow: "no",
+      transparent: "no",
+      icon: "no",
+      top_spacing: "5",
+      left_spacing: "6",
+      icon_size: "48",
     });
     return `${SEAL_API_BASE}?${params.toString()}`;
   }, [char, currentFont, size]);
+
+  // 启动加载超时定时器:10 秒内未加载完成则尝试下一个字体或标记失败
+  useEffect(() => {
+    if (loaded || failed) return;
+    clearTimeout();
+    timeoutRef.current = setTimeout(() => {
+      // 超时后尝试下一个字体,或标记为失败
+      setFontIndex((prev) => {
+        if (prev < fontList.length - 1) {
+          setLoaded(false);
+          return prev + 1;
+        }
+        setFailed(true);
+        return prev;
+      });
+    }, 10000);
+    return () => clearTimeout();
+  }, [imgSrc, loaded, failed, fontList.length, clearTimeout]);
 
   const handleLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
     const img = e.currentTarget;
@@ -103,9 +140,9 @@ function SingleSealChar({ char, script, size }: SingleCharProps) {
             contentPixels++;
           }
         }
-        // 内容像素占比小于 2% 视为缺字空白图
+        // 内容像素占比小于 1% 视为缺字空白图(降低阈值以兼容笔画少的字)
         const totalPixels = sampleSize * sampleSize;
-        if (contentPixels < totalPixels * 0.02) {
+        if (contentPixels < totalPixels * 0.01) {
           tryNextFont();
           return;
         }
@@ -113,6 +150,7 @@ function SingleSealChar({ char, script, size }: SingleCharProps) {
     } catch {
       // canvas 读取失败(跨域等),忽略检测,直接显示
     }
+    clearTimeout();
     setLoaded(true);
   };
 
@@ -134,7 +172,7 @@ function SingleSealChar({ char, script, size }: SingleCharProps) {
 
   return (
     <div
-      className="seal-char inline-flex items-center justify-center"
+      className="seal-char inline-flex items-center justify-center relative"
       style={{ width: size, height: size }}
     >
       {!failed ? (
@@ -156,10 +194,10 @@ function SingleSealChar({ char, script, size }: SingleCharProps) {
               transition: "opacity 0.3s ease",
             }}
           />
-          {/* 加载中占位 - 显示楷书淡影 */}
+          {/* 加载中占位 - 显示楷书淡影 + 脉动动画提示加载中 */}
           {!loaded && (
             <span
-              className="absolute font-serif select-none"
+              className="absolute font-serif select-none animate-pulse"
               style={{
                 fontSize: size * 0.7,
                 color: "rgba(240, 192, 64, 0.3)",
