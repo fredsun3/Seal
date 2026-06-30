@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { ChevronDown, BookOpen, Sparkles, Scroll, Grid3x3, BookMarked, ArrowRight } from "lucide-react";
+import { ChevronDown, BookOpen, Sparkles, Scroll, Grid3x3, BookMarked, ArrowRight, BookText } from "lucide-react";
 import { scripts } from "@/data/scripts";
 import { surnames } from "@/data/surnames";
 import ScriptCard from "@/components/ScriptCard";
@@ -372,6 +372,103 @@ export default function Home() {
                     </span>
                     <span className="text-bronze-light/50 text-xs font-serif">
                       1000 字 · 250 句 · 125 联
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </Link>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* 三字经入口 */}
+      <section className="py-20 lg:py-28 relative overflow-hidden bg-paper-dark/20">
+        <div className="container mx-auto px-4 relative z-10">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-12"
+          >
+            <div className="inline-flex items-center gap-2 px-4 py-1 mb-4 text-xs tracking-widest text-bronze border border-bronze/30 rounded-full">
+              <BookText size={12} />
+              蒙学经典 · THREE CHARACTER CLASSIC
+            </div>
+            <h2 className="font-display text-4xl lg:text-5xl text-ink mb-3">
+              三字经 · 三字成句之妙
+            </h2>
+            <p className="text-rubbing text-sm max-w-2xl mx-auto">
+              南宋王应麟编次,三字一句,朗朗上口。
+              教育人伦、历史朝代、勤学励志,蒙学之冠。
+            </p>
+          </motion.div>
+
+          {/* 三字经入口卡片 */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="max-w-4xl mx-auto"
+          >
+            <Link
+              to="/sanzijing"
+              className="group block rounded-lg overflow-hidden transition-all duration-500 hover:-translate-y-1 hover:shadow-seal"
+              style={{
+                background:
+                  "linear-gradient(135deg, #2a2018 0%, #1a1410 50%, #0d0a08 100%)",
+                border: "1px solid rgba(184, 137, 58, 0.3)",
+              }}
+            >
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-0 items-center">
+                {/* 左侧:篆体展示 */}
+                <div className="p-10 lg:p-14 flex flex-col items-center justify-center">
+                  <div
+                    className="flex flex-wrap items-center justify-center gap-2 mb-4"
+                    style={{ backgroundColor: "#c8392e", padding: "1.5rem", borderRadius: "8px" }}
+                  >
+                    {["人", "之", "初"].map((ch, i) => (
+                      <SealCharacter
+                        key={`${ch}-${i}`}
+                        char={ch}
+                        script="xiaozhuan"
+                        size={56}
+                      />
+                    ))}
+                  </div>
+                  <div
+                    className="flex flex-wrap items-center justify-center gap-2"
+                    style={{ backgroundColor: "#c8392e", padding: "1.5rem", borderRadius: "8px" }}
+                  >
+                    {["性", "本", "善"].map((ch, i) => (
+                      <SealCharacter
+                        key={`${ch}-${i}`}
+                        char={ch}
+                        script="xiaozhuan"
+                        size={56}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {/* 右侧:介绍与入口 */}
+                <div className="p-10 lg:p-12 text-center md:text-left">
+                  <h3 className="font-display text-3xl text-paper mb-4">
+                    人之初 · 性本善
+                  </h3>
+                  <p className="text-bronze-light/70 text-sm font-serif leading-relaxed mb-6">
+                    《三字经》相传为南宋王应麟所作,三字一句,两句一联。
+                    涵盖教育理念、人伦常识、天文地理、历史朝代、勤学典故,
+                    逐联注释,明其典故,通其义理,为蒙学第一书。
+                  </p>
+                  <div className="flex flex-col sm:flex-row items-center gap-3 md:justify-start justify-center">
+                    <span className="inline-flex items-center gap-2 px-6 py-2.5 bg-cinnabar text-paper rounded font-serif text-sm tracking-wider group-hover:bg-cinnabar-dark transition-all">
+                      阅览三字经
+                      <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                    </span>
+                    <span className="text-bronze-light/50 text-xs font-serif">
+                      三字一句 · 两句一联 · 朗朗上口
                     </span>
                   </div>
                 </div>
