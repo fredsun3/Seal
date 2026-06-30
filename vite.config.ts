@@ -12,10 +12,16 @@ export default defineConfig({
     strictPort: true,
     proxy: {
       // 代理篆体图片生成 API,避免跨域与混合内容问题(仅开发环境)
+      // 切换到 yishuzi.cn(yishuzi.org 服务器宕机)
+      // 正确的图片 API 路径为 /zhuanti/image.png
       '/seal-api': {
-        target: 'http://www.yishuzi.org',
+        target: 'https://www.yishuzi.cn',
         changeOrigin: true,
+        secure: false,
         rewrite: (path) => path.replace(/^\/seal-api/, ''),
+        // 代理超时:15 秒无响应则返回错误,触发前端 onError 回退
+        timeout: 15000,
+        proxyTimeout: 15000,
       },
     },
   },
